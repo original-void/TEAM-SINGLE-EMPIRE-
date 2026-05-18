@@ -282,7 +282,7 @@
       });
   }
 
-  // PREMIUM PDF GENERATOR
+  // FIXED PDF GENERATOR - Works with jsPDF 2.5.1
   window.downloadPDF = async function() {
     if (!currentPassport) return;
 
@@ -300,11 +300,19 @@
       const pageW = 210;
       const pageH = 297;
 
-      // 1. Background + subtle crown pattern
+      // 1. Background
       doc.setFillColor(8, 8, 8);
       doc.rect(0, 0, pageW, pageH, 'F');
 
-      // Tiny crown watermark pattern
+      // 2. Faked gradient glow at top using multiple layers
+      for(let i = 0; i < 45; i++) {
+        let alpha = 255 - (i * 5);
+        if(alpha < 0) alpha = 0;
+        doc.setFillColor(255, 215, 0, alpha/255);
+        doc.rect(0, i, pageW, 1, 'F');
+      }
+
+      // 3. Tiny crown watermark pattern
       doc.setTextColor(15, 15, 15);
       doc.setFontSize(12);
       for(let x = 15; x < pageW; x += 25) {
@@ -313,15 +321,7 @@
         }
       }
 
-      // Gold gradient glow at top
-      const gradient = doc.linearGradient(0, 0, 0, 45);
-      gradient.addColorStop(0, '#FFD700');
-      gradient.addColorStop(0.5, '#D4AF37');
-      gradient.addColorStop(1, '#0A0A0A');
-      doc.setFillColor(gradient);
-      doc.rect(0, 0, pageW, 45, 'F');
-
-      // 2. Double border with outer glow
+      // 4. Double border
       doc.setDrawColor(255, 215, 0);
       doc.setLineWidth(2);
       doc.rect(10, 10, pageW - 20, pageH - 20);
@@ -330,7 +330,7 @@
       doc.setLineWidth(0.8);
       doc.rect(13, 13, pageW - 26, pageH - 26);
 
-      // 3. Header
+      // 5. Header
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(30);
       doc.setTextColor(255, 215, 0);
@@ -345,40 +345,31 @@
       doc.setTextColor(184, 148, 31);
       doc.text('BY DECREE OF THE KING', pageW/2, 50, { align: 'center' });
 
-      // 4. Gold FOIL CROWN with gradient fill effect
+      // 6. Gold Crown
       doc.setDrawColor(255, 215, 0);
       doc.setLineWidth(1.2);
       const crownY = 58;
 
-      // Crown outline
       doc.lines([
         [-22, 6], [-17, -6], [-11, 3], [-5, -9], [0, 0],
         [5, -9], [11, 3], [17, -6], [22, 6]
       ], pageW/2, crownY);
 
-      // Gold foil gradient fill for crown
-      const crownGradient = doc.linearGradient(pageW/2 - 22, crownY - 9, pageW/2 + 22, crownY + 6);
-      crownGradient.addColorStop(0, '#FFD700');
-      crownGradient.addColorStop(0.5, '#FFA500');
-      crownGradient.addColorStop(1, '#B8860B');
-      doc.setFillColor(crownGradient);
-
-      // Fill crown spikes
+      // Fill crown with solid gold
+      doc.setFillColor(255, 215, 0);
       doc.triangle(pageW/2 - 17, crownY - 6, pageW/2 - 11, crownY + 3, pageW/2 - 17, crownY + 6, 'F');
       doc.triangle(pageW/2 - 5, crownY - 9, pageW/2 + 5, crownY - 9, pageW/2, crownY, 'F');
       doc.triangle(pageW/2 + 11, crownY + 3, pageW/2 + 17, crownY - 6, pageW/2 + 17, crownY + 6, 'F');
 
-      // Crown jewels with glow
-      doc.setFillColor(255, 215, 0);
+      // Crown jewels
+      doc.setFillColor(255, 0, 100);
       doc.circle(pageW/2 - 17, crownY - 6, 2, 'F');
+      doc.setFillColor(0, 200, 255);
       doc.circle(pageW/2, crownY - 9, 2.5, 'F');
+      doc.setFillColor(255, 0, 100);
       doc.circle(pageW/2 + 17, crownY - 6, 2, 'F');
 
-      // Jewel glow
-      doc.setFillColor(255, 215, 0, 0.3);
-      doc.circle(pageW/2, crownY - 9, 4, 'F');
-
-      // 5. Details section
+      // 7. Details section
       let y = 80;
       const labelX = 20;
       const lineEndX = 95;
@@ -396,7 +387,6 @@
 
         let displayValue = value.toString();
         if (label!== 'STATUS:') displayValue = displayValue.toUpperCase();
-
         doc.text(displayValue, labelX, y);
 
         y += 9;
@@ -412,14 +402,12 @@
       drawField('EMBASSY:', currentPassport.embassy);
       drawField('LAST BETRAYAL:', currentPassport.oshwa.split('-')[0], [255, 80, 80]);
 
-      // 6. Photo with premium gold frame + shadow
+      // 8. Photo with gold frame + shadow
       const photoX = 115, photoY = 80, photoW = 75, photoH = 95;
 
-      // Shadow
       doc.setFillColor(0, 0, 0, 0.4);
       doc.rect(photoX + 3, photoY + 3, photoW, photoH, 'F');
 
-      // Double gold frame
       doc.setDrawColor(255, 215, 0);
       doc.setLineWidth(2.5);
       doc.rect(photoX, photoY, photoW, photoH);
@@ -436,27 +424,25 @@
         }
       }
 
-      // 7. Subtle TSE watermark
+      // 9. TSE watermark
       doc.setFontSize(90);
       doc.setTextColor(20, 20, 20);
       doc.text('TSE', pageW/2, 165, { align: 'center' });
 
-      // 8. HOLOGRAPHIC STRIP like real passport
+      // 10. Holographic strip - faked with alternating colors
       const stripY = 200;
-      const stripGradient = doc.linearGradient(0, stripY, pageW, stripY + 8);
-      stripGradient.addColorStop(0, '#FFD700');
-      stripGradient.addColorStop(0.25, '#FF00FF');
-      stripGradient.addColorStop(0.5, '#00FFFF');
-      stripGradient.addColorStop(0.75, '#FF00FF');
-      stripGradient.addColorStop(1, '#FFD700');
-      doc.setFillColor(stripGradient);
-      doc.rect(0, stripY, pageW, 8, 'F');
+      const colors = [[255,215,0], [255,0,255], [0,255,255], [255,0,255]];
+      for(let i = 0; i < 8; i++) {
+        let c = colors[i % colors.length];
+        doc.setFillColor(...c);
+        doc.rect(0, stripY + i, pageW, 1, 'F');
+      }
 
       doc.setFontSize(6);
       doc.setTextColor(0, 0, 0);
-      doc.text('TEAM SINGLE EMPIRE • ROYAL DECREE • TEAM SINGLE EMPIRE • ROYAL DECREE', pageW/2, stripY + 5, { align: 'center' });
+      doc.text('TEAM SINGLE EMPIRE • ROYAL DECREE • TEAM SINGLE EMPIRE', pageW/2, stripY + 5, { align: 'center' });
 
-      // 9. Bottom section
+      // 11. Bottom section
       const bottomY = 220;
 
       // QR Code
@@ -469,17 +455,14 @@
           doc.text('SCAN TO VERIFY', 44, bottomY + 53, { align: 'center' });
       } catch(e) {}
 
-      // Holographic Royal Seal
+      // Royal Seal
       doc.setDrawColor(255, 215, 0);
       doc.setLineWidth(2);
       doc.circle(pageW/2, bottomY + 24, 20);
       doc.setLineWidth(0.8);
       doc.circle(pageW/2, bottomY + 24, 15);
 
-      const sealGradient = doc.radialGradient(pageW/2, bottomY + 24, 12);
-      sealGradient.addColorStop(0, '#FFD700');
-      sealGradient.addColorStop(1, '#B8860B');
-      doc.setFillColor(sealGradient);
+      doc.setFillColor(255, 215, 0);
       doc.circle(pageW/2, bottomY + 24, 12, 'F');
 
       doc.setFontSize(9);
@@ -502,7 +485,7 @@
       doc.text('HIS MAJESTY', sigX + 27, bottomY + 25, { align: 'center' });
       doc.text('TEAM SINGLE EMPIRE', sigX + 27, bottomY + 32, { align: 'center' });
 
-      // 10. Footer
+      // 12. Footer
       doc.setDrawColor(255, 215, 0);
       doc.setLineWidth(0.8);
       doc.line(20, 275, pageW - 20, 275);
