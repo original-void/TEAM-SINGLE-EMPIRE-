@@ -45,11 +45,11 @@
     <div id="errorBox" class="hidden"></div>
 
     <input type="text" id="jina" placeholder="Royal Name" maxlength="50">
-    <input type="text" id="oshwa" placeholder="Date of Last Betrayal" maxlength="30">
+    <input type="date" id="oshwa">
     <input type="text" id="embassy" placeholder="Territory • Embassy yako" maxlength="50">
     <label style="font-size:12px; color:#B8941F;">Official Portrait - Kwa Passport Tu:</label>
     <input type="file" id="photo" accept="image/*">
-    <p class="note">Picha haitasave kwa database. Inaonekana kwa passport na PDF tu.</p>
+    <p class="note">Picha itasave kwa database sasa. Inaonekana kwa passport, PDF, na verification.</p>
     <img id="photoPreview" class="preview hidden">
 
     <button id="claimBtn" onclick="tengenezaPassport()">👑 CLAIM CITIZENSHIP 👑</button>
@@ -104,11 +104,9 @@
   let currentPassport = null;
   let citizenCount = 0;
   let currentPhotoDataUrl = '';
-  // SAHIHI YA KING SMOKIE - SVG CALLIGRAPHY
   const ROYAL_SIGNATURE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjgwIiB2aWV3Qm94PSIwIDAgMjAwIDgwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMCA0MEMyMCAzMCAzNSAzNSA0NSA0MEM1NSA0NSA3MCA0MCA4MCA0NUM5MCA1MCAxMDUgNDUgMTE1IDUwQzEyNSA1NSAxNDAgNDUgMTUwIDQ1QzE2MCA0NSAxNzUgMzUgMTkwIDQwIiBzdHJva2U9IiNENEFGMzciIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHRleHQgeD0iMTAwIiB5PSI2NSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsIHNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXN0eWxlPSJpdGFsaWMiIGZpbGw9IiNENEFGMzciIHRleHQtYW5jaG9yPSJtaWRkbGUiPktpbmcgU21va2llPC90ZXh0Pjwvc3ZnPg==';
 
   window.addEventListener('load', () => {
-    console.log('Firebase loaded successfully');
     loadCitizenCount();
   });
 
@@ -124,12 +122,12 @@
   function testDatabase() {
     document.getElementById('statusMsg').innerHTML = 'Testing database...';
     db.ref('citizens').once('value')
-     .then(snap => {
+   .then(snap => {
         const count = snap.numChildren();
         document.getElementById('statusMsg').innerHTML = `Database OK! Found ${count} citizens ✅`;
         document.getElementById('statusMsg').style.color = '#00FF00';
       })
-     .catch(err => showError(err.message));
+   .catch(err => showError(err.message));
   }
 
   function loadCitizenCount() {
@@ -167,7 +165,7 @@
     document.getElementById('claimBtn').disabled = true;
 
     db.ref('citizens').once('value')
-     .then(snap => {
+   .then(snap => {
         let maxNum = 0;
         snap.forEach(child => {
           const num = parseInt(child.val().no.replace('TSE', ''));
@@ -181,13 +179,14 @@
           jina: jina,
           oshwa: oshwa,
           embassy: embassy,
-          date: new Date().toISOString().split('T')[0],
+          date: new Date().toLocaleDateString('en-GB'),
+          photo: currentPhotoDataUrl || '',
           timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
         return db.ref('citizens/' + passportNo).set(citizen).then(() => citizen);
       })
-     .then(citizen => {
+   .then(citizen => {
         currentPassport = citizen;
         document.getElementById('formDiv').classList.add('hidden');
         document.getElementById('passportDiv').classList.remove('hidden');
@@ -202,7 +201,7 @@
           document.getElementById('pichaYangu').src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTAiIGhlaWdodD0iMTEwIiB2aWV3Qm94PSIwIDAgOTAgaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSI5MCIgaGVpZ2h0PSIxMTAiIGZpbGw9IiMwMDAiLz48dGV4dCB4PSI0NSIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0iI0Q0QUYzNyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Tk8gUEhPVE88L3RleHQ+PC9zdmc+';
         }
       })
-     .catch(err => {
+   .catch(err => {
         showError(err.message);
         document.getElementById('claimBtn').innerText = '👑 CLAIM CITIZENSHIP 👑';
         document.getElementById('claimBtn').disabled = false;
@@ -212,117 +211,80 @@
   function downloadPDF() {
     if (!currentPassport) return;
 
-    document.querySelector('button[onclick="downloadPDF()"]').innerText = 'GENERATING... ⏳';
-    document.querySelector('button[onclick="downloadPDF()"]').disabled = true;
+    const btn = document.querySelector('button[onclick="downloadPDF()"]');
+    btn.innerText = 'GENERATING... ⏳';
+    btn.disabled = true;
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
 
+    // Black background
     doc.setFillColor(10, 10, 10);
     doc.rect(0, 0, pageW, pageH, 'F');
-    doc.setDrawColor(212, 175, 55);
-    doc.setLineWidth(2);
-    doc.rect(8, 8, pageW - 16, pageH - 16);
-    doc.setLineWidth(0.8);
-    doc.rect(12, 12, pageW - 24, pageH - 24);
 
-    doc.setFont('times', 'bold');
-    doc.setFontSize(24);
-    doc.setTextColor(212, 175, 55);
-    doc.text('TEAM SINGLE EMPIRE', pageW / 2, 28, { align: 'center' });
-    doc.setFontSize(14);
-    doc.text('ROYAL PASSPORT', pageW / 2, 38, { align: 'center' });
-    doc.setFontSize(11);
-    doc.setFont('times', 'italic');
-    doc.text('BY DECREE OF THE KING', pageW / 2, 46, { align: 'center' });
-
-    // CROWN DRAWN
+    // Double gold borders - King Empire style
     doc.setDrawColor(212, 175, 55);
-    doc.setFillColor(212, 175, 55);
+    doc.setLineWidth(4);
+    doc.rect(30, 30, pageW - 60, pageH - 60);
     doc.setLineWidth(1);
-    doc.circle(pageW/2 - 8, 58, 2, 'F');
-    doc.circle(pageW/2, 54, 3, 'F');
-    doc.circle(pageW/2 + 8, 58, 2, 'F');
-    doc.rect(pageW/2 - 12, 60, 24, 3, 'F');
+    doc.rect(38, 38, pageW - 76, pageH - 76);
 
-    // WATERMARK
-    doc.setTextColor(212, 175, 55, 0.05);
-    doc.setFontSize(80);
+    // Crown
+    doc.setFontSize(45);
+    doc.text('♛', pageW/2, 70, { align: 'center' });
+
+    // Title
     doc.setFont('times', 'bold');
-    doc.text('TSE', pageW / 2, pageH / 2 + 10, { align: 'center' });
+    doc.setFontSize(32);
+    doc.setTextColor(212, 175, 55);
+    doc.text('TEAM', pageW/2, 115, { align: 'center' });
+    doc.text('SINGLE EMPIRE', pageW/2, 155, { align: 'center' });
 
-    // PHOTO
-    if (currentPhotoDataUrl) {
-        try {
-            doc.setDrawColor(212, 175, 55);
-            doc.setLineWidth(2);
-            doc.rect(125, 80, 65, 85);
-            doc.setLineWidth(0.5);
-            doc.rect(127, 82, 61, 81);
-            doc.addImage(currentPhotoDataUrl, 'JPEG', 128, 83, 59, 79);
-        } catch(e) { console.log('Photo error:', e); }
-    } else {
-        doc.setDrawColor(212, 175, 55);
-        doc.setLineWidth(2);
-        doc.rect(125, 80, 65, 85);
-        doc.setFontSize(10);
-        doc.setTextColor(212, 175, 55);
-        doc.text('NO PHOTO', 157.5, 125, { align: 'center' });
+    doc.setFont('times', 'normal');
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text('ROYAL PASSPORT', pageW/2, 210, { align: 'center' });
+
+    // Photo frame
+    const photoX = 70, photoY = 280, photoW = 180, photoH = 220;
+    doc.setDrawColor(212, 175, 55);
+    doc.setLineWidth(4);
+    doc.rect(photoX, photoY, photoW, photoH);
+
+    if (currentPassport.photo) {
+      doc.addImage(currentPassport.photo, 'JPEG', photoX + 2, photoY + 2, photoW - 4, photoH - 4);
     }
 
-    // DETAILS
-    doc.setTextColor(212, 175, 55);
+    // Details
     doc.setFont('times', 'bold');
-    doc.setFontSize(11);
-    let y = 90;
-    const lineGap = 14;
-
-    doc.text('PASSPORT NO:', 20, y);
-    doc.setFont('courier', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text(currentPassport.no, 20, y + 6);
-    doc.setDrawColor(212, 175, 55);
-    doc.line(20, y + 8, 110, y + 8);
-
-    y += lineGap + 6;
+    doc.setFontSize(14);
     doc.setTextColor(212, 175, 55);
-    doc.setFont('times', 'bold');
-    doc.text('ROYAL NAME:', 20, y);
-    doc.setFont('courier', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text(currentPassport.jina.toUpperCase(), 20, y + 6);
-    doc.line(20, y + 8, 110, y + 8);
 
-    y += lineGap + 6;
-    doc.setTextColor(212, 175, 55);
-    doc.setFont('times', 'bold');
-    doc.text('STATUS:', 20, y);
-    doc.setFont('courier', 'bold');
-    doc.setTextColor(0, 255, 120);
-    doc.text('Certified Single', 20, y + 6);
-    doc.line(20, y + 8, 110, y + 8);
+    let y = photoY;
+    const labelX = 280;
 
-    y += lineGap + 6;
-    doc.setTextColor(212, 175, 55);
-    doc.setFont('times', 'bold');
-    doc.text('EMBASSY:', 20, y);
-    doc.setFont('courier', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text(currentPassport.embassy.toUpperCase(), 20, y + 6);
-    doc.line(20, y + 8, 110, y + 8);
+    const fields = [
+      ['FULL NAME', currentPassport.jina],
+      ['ID NO.', currentPassport.no],
+      ['BETRAYAL DATE', currentPassport.oshwa],
+      ['STATUS', 'SINGLE'],
+      ['TEAM', 'TSE']
+    ];
 
-    y += lineGap + 6;
-    doc.setTextColor(212, 175, 55);
-    doc.setFont('times', 'bold');
-    doc.text('LAST BETRAYAL:', 20, y);
-    doc.setFont('courier', 'bold');
-    doc.setTextColor(255, 0, 0);
-    doc.text(currentPassport.oshwa, 20, y + 6);
-    doc.line(20, y + 8, 110, y + 8);
+    fields.forEach(([label, value]) => {
+      doc.text(label, labelX, y);
+      y += 24;
+      doc.setFont('times', 'bolditalic');
+      doc.setFontSize(20);
+      doc.text(value.toUpperCase(), labelX, y);
+      y += 50;
+      doc.setFont('times', 'bold');
+      doc.setFontSize(14);
+    });
 
-    // QR CODE - FIXED NA QRIOUS
+    // QR CODE
     const verifyUrl = window.location.origin + '/verify.html?no=' + currentPassport.no;
     try {
         const qr = new QRious({
@@ -336,50 +298,20 @@
         doc.setFontSize(7);
         doc.setTextColor(212, 175, 55);
         doc.text('SCAN TO VERIFY', 37.5, 230, { align: 'center' });
-    } catch(e) {
-        console.log('QR Error:', e);
-        doc.setFontSize(6);
-        doc.setTextColor(212, 175, 55);
-        doc.text('Verify: ' + verifyUrl, 20, 210, { maxWidth: 80 });
-    }
+    } catch(e) {}
 
-    // ROYAL SEAL - FIXED
-    doc.setDrawColor(212, 175, 55);
-    doc.setLineWidth(1.5);
-    doc.circle(90, 207, 18);
-    doc.setLineWidth(0.5);
-    doc.circle(90, 207, 15);
-
-    // Draw crown in seal
-    doc.setFillColor(212, 175, 55);
-    doc.circle(90 - 3, 205, 1.5, 'F');
-    doc.circle(90, 203, 2, 'F');
-    doc.circle(90 + 3, 205, 1.5, 'F');
-    doc.rect(90 - 5, 206, 10, 2, 'F');
-
-    doc.setFontSize(6);
-    doc.setFont('times', 'bold');
-    doc.setTextColor(212, 175, 55);
-    doc.text('ROYAL SEAL', 90, 230, { align: 'center' });
-
-    // SIGNATURE - SAHIHI HALISI YA MKONO
+    // Signature
     doc.setDrawColor(212, 175, 55);
     doc.line(120, 215, 185, 215);
     try {
         doc.addImage(ROYAL_SIGNATURE, 'PNG', 125, 195, 55, 18);
-    } catch(e) {
-        doc.setFont('times', 'italic');
-        doc.setFontSize(16);
-        doc.setTextColor(212, 175, 55);
-        doc.text('King Smokie', 152.5, 210, { align: 'center' });
-    }
+    } catch(e) {}
     doc.setFont('times', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(184, 148, 31);
     doc.text('HIS MAJESTY', 152.5, 222, { align: 'center' });
-    doc.text('TEAM SINGLE EMPIRE', 152.5, 228, { align: 'center' });
 
-    // FOOTER
+    // Footer
     doc.setDrawColor(212, 175, 55);
     doc.line(20, pageH - 25, pageW - 20, pageH - 25);
     doc.setFont('times', 'bold');
@@ -391,8 +323,8 @@
 
     doc.save(`TSE_Royal_Passport_${currentPassport.no}.pdf`);
 
-    document.querySelector('button[onclick="downloadPDF()"]').innerText = '📜 DOWNLOAD PDF';
-    document.querySelector('button[onclick="downloadPDF()"]').disabled = false;
+    btn.innerText = '📜 DOWNLOAD PDF';
+    btn.disabled = false;
   }
 
   function funguaAdmin() {
@@ -408,7 +340,7 @@
 
   function loadAdminTable() {
     db.ref('citizens').once('value')
-     .then(snap => {
+   .then(snap => {
         let html = '<tr><th>No</th><th>Royal Name</th><th>Territory</th><th>Last Betrayal</th><th>Date</th><th>Action</th></tr>';
         snap.forEach(child => {
           const c = child.val();
@@ -423,23 +355,23 @@
         });
         document.getElementById('citizenTable').innerHTML = html;
       })
-     .catch(err => showError('Admin load failed: ' + err.message));
+   .catch(err => showError('Admin load failed: ' + err.message));
   }
 
   function deleteCitizen(no) {
     if (confirm(`Banish citizen ${no} from the Empire?`)) {
       db.ref('citizens/' + no).remove()
-       .then(() => {
+     .then(() => {
           alert('Citizen Banished! 💀');
           loadAdminTable();
         })
-       .catch(err => showError(err.message));
+     .catch(err => showError(err.message));
     }
   }
 
   function exportCSV() {
     db.ref('citizens').once('value')
-     .then(snap => {
+   .then(snap => {
         let csv = 'Passport No,Royal Name,Embassy,Last Betrayal,Date Decreed\n';
         snap.forEach(child => {
           const c = child.val();
@@ -452,8 +384,8 @@
         a.download = 'TSE_Royal_Census.csv';
         a.click();
       })
-     .catch(err => showError(err.message));
+   .catch(err => showError(err.message));
   }
 </script>
 </body>
-    </html>
+</html>
