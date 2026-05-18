@@ -9,11 +9,11 @@
     :root { --gold: #D4AF37; --black: #0A0A0A; }
     body { font-family: 'Montserrat'; background: var(--black); color: var(--gold); padding: 20px; text-align: center; }
     h1 { font-family: 'Cinzel'; }
- .card { background: #111; padding: 30px; border-radius: 15px; border: 2px solid var(--gold); max-width: 500px; margin: 20px auto; box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
- .valid { color: #00FF00; font-size: 24px; font-weight: bold; }
- .invalid { color: #FF0000; font-size: 24px; font-weight: bold; }
- .detail { text-align: left; margin: 10px 0; }
- .photo { width: 120px; height: 140px; border: 3px solid var(--gold); object-fit: cover; margin: 15px auto; display: block; }
+.card { background: #111; padding: 30px; border-radius: 15px; border: 2px solid var(--gold); max-width: 500px; margin: 20px auto; }
+.valid { color: #00FF00; font-size: 24px; font-weight: bold; }
+.invalid { color: #FF0000; font-size: 24px; font-weight: bold; }
+.detail { text-align: left; margin: 10px 0; }
+.photo { width: 120px; height: 140px; border: 3px solid var(--gold); object-fit: cover; margin: 15px auto; display: block; }
 </style>
 </head>
 <body>
@@ -26,19 +26,19 @@
   import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyBLir1Npw7chK2ns81AISYtb_NcKV-w-3M",
-    authDomain: "team-single-bf4b3.firebaseapp.com",
-    projectId: "team-single-bf4b3",
-    storageBucket: "team-single-bf4b3.firebasestorage.app",
-    messagingSenderId: "909531221982",
-    appId: "1:909531221982:web:4d4d8bd8be8e731779d74f"
+    apiKey: "AIzaSyBAlPDa0MAN4DdZT9rhlUQ0ukPAq5KFgkU",
+    authDomain: "team-single-empire.firebaseapp.com",
+    databaseURL: "https://team-single-empire-default-rtdb.firebaseio.com",
+    projectId: "team-single-empire",
+    storageBucket: "team-single-empire.firebasestorage.app",
+    messagingSenderId: "1012663695661",
+    appId: "1:1012663695661:web:46703b21c5db6205063ba4"
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const passportNo = urlParams.get('no');
+  const passportNo = new URLSearchParams(window.location.search).get('no');
 
   if (!passportNo) {
     document.getElementById('result').innerHTML = '<p class="invalid">❌ NO PASSPORT NUMBER PROVIDED</p>';
@@ -46,24 +46,18 @@
     get(child(ref(db), 'citizens/' + passportNo)).then((snap) => {
         if (snap.exists()) {
           const c = snap.val();
-          let html = `
+          document.getElementById('result').innerHTML = `
             <p class="valid">✅ VERIFIED CITIZEN</p>
             ${c.photo? `<img src="${c.photo}" class="photo">` : ''}
             <div class="detail"><b>PASSPORT NO:</b> ${c.no}</div>
-            <div class="detail"><b>ROYAL NAME:</b> ${c.jina.toUpperCase()}</div>
-            <div class="detail"><b>STATUS:</b> Certified Single</div>
-            <div class="detail"><b>EMBASSY:</b> ${(c.embassy || 'N/A').toUpperCase()}</div>
+            <div class="detail"><b>NAME:</b> ${c.jina.toUpperCase()}</div>
+            <div class="detail"><b>EMBASSY:</b> ${c.embassy.toUpperCase()}</div>
             <div class="detail"><b>LAST BETRAYAL:</b> ${c.oshwa}</div>
             <div class="detail"><b>DECREED:</b> ${c.date}</div>
-            <p style="margin-top:20px; font-size:12px;">LONG LIVE THE EMPIRE</p>
-            <p style="font-size:10px; color:#888;">Checked on ${new Date().toLocaleString()}</p>
           `;
-          document.getElementById('result').innerHTML = html;
         } else {
-          document.getElementById('result').innerHTML = '<p class="invalid">❌ FAKE PASSPORT<br>This citizen does not exist in the Empire</p>';
+          document.getElementById('result').innerHTML = '<p class="invalid">❌ FAKE PASSPORT</p>';
         }
-      }).catch(err => {
-        document.getElementById('result').innerHTML = '<p class="invalid">❌ DATABASE ERROR</p>';
       });
   }
 </script>
