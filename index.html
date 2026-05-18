@@ -186,62 +186,112 @@
       });
   }
 
-  window.downloadPDF = function() {
+  window.downloadPDF = async function() {
     if (!currentPassport) return;
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
 
-    doc.setFillColor(10, 10, 10);
-    doc.rect(0, 0, pageW, pageH, 'F');
-    doc.setDrawColor(212, 175, 55);
-    doc.setLineWidth(4);
-    doc.rect(30, 30, pageW - 60, pageH - 60);
-    doc.setLineWidth(1);
-    doc.rect(38, 38, pageW - 76, pageH - 76);
-    doc.setFontSize(45);
-    doc.text('♛', pageW/2, 70, { align: 'center' });
-    doc.setFont('times', 'bold');
-    doc.setFontSize(32);
-    doc.setTextColor(212, 175, 55);
-    doc.text('TEAM', pageW/2, 115, { align: 'center' });
-    doc.text('SINGLE EMPIRE', pageW/2, 155, { align: 'center' });
-    doc.setFont('times', 'normal');
-    doc.setFontSize(16);
-    doc.setTextColor(255, 255, 255);
-    doc.text('ROYAL PASSPORT', pageW/2, 210, { align: 'center' });
+    const btn = document.querySelector('button[onclick="downloadPDF()"]');
+    btn.innerText = 'GENERATING... ⏳';
+    btn.disabled = true;
 
-    const photoX = 70, photoY = 280, photoW = 180, photoH = 220;
-    doc.rect(photoX, photoY, photoW, photoH);
-    if (currentPassport.photo) {
-      doc.addImage(currentPassport.photo, 'JPEG', photoX + 2, photoY + 2, photoW - 4, photoH - 4);
+    try {
+      if (!window.jspdf) {
+        throw new Error('jsPDF failed to load. Refresh page and try again.');
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'pt', 'a4');
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+
+      doc.setFillColor(10, 10, 10);
+      doc.rect(0, 0, pageW, pageH, 'F');
+      doc.setDrawColor(212, 175, 55);
+      doc.setLineWidth(4);
+      doc.rect(30, 30, pageW - 60, pageH - 60);
+      doc.setLineWidth(1);
+      doc.rect(38, 38, pageW - 76, pageH - 76);
+      doc.setFontSize(45);
+      doc.text('♛', pageW/2, 70, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(32);
+      doc.setTextColor(212, 175, 55);
+      doc.text('TEAM', pageW/2, 115, { align: 'center' });
+      doc.text('SINGLE EMPIRE', pageW/2, 155, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(16);
+      doc.setTextColor(255, 255, 255);
+      doc.text('ROYAL PASSPORT', pageW/2, 210, { align: 'center' });
+
+      const photoX = 70, photoY = 280, photoW = 180, photoH = 220;
+      doc.rect(photoX, photoY, photoW, photoH);
+      if (currentPassport.photo && currentPassport.photo.startsWith('data:image')) {
+        try {
+          doc.addImage(currentPassport.photo, 'JPEG', photoX + 2, photoY + 2, photoW - 4, photoH - 4);
+        } catch(e) {
+          console.log('Photo error:', e);
+        }
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(212, 175, 55);
+      let y = photoY;
+      const labelX = 280;
+      const fields = [
+        ['FULL NAME', currentPassport.jina],
+        ['ID NO.', currentPassport.no],
+        ['BETRAYAL DATE', currentPassport.oshwa],
+        ['STATUS', 'SINGLE'],
+        ['TEAM', 'TSE']
+      ];
+
+      fields.forEach(([label, value]) => {
+        doc.text(label, labelX, y);
+        y += 24;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.text(value.toUpperCase(), labelX, y);
+        y += 45;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+      });
+
+      const verifyUrl = window.location.origin + '/verify.html?no=' + currentPassport.no;
+      try {
+          const qr = new QRious({ value: verifyUrl, size: 200, background: 'white', foreground: 'black' });
+          doc.addImage(qr.toDataURL(), 'PNG', 20, 190, 35, 35);
+          doc.setFontSize(7);
+          doc.text('SCAN TO VERIFY', 37.5, 230, { align: 'center' });
+      } catch(e) {}
+
+      doc.setFontSize(10);
+      doc.setTextColor(212, 175, 55);
+      doc.text('LONG LIVE THE EMPIRE', pageW / 2, pageH - 18, { align: 'center' });
+      doc.setFontSize(8);
+      doc.text('EST. 2026 • DECREED ON ' + currentPassport.date, pageW / 2, pageH - 12, { align: 'center' });
+
+      const pdfBlob = doc.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TSE_Royal_Passport_${currentPassport.no}.pdf`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+
+    } catch(err) {
+      alert('PDF Error: ' + err.message);
+      console.error(err);
     }
 
-    doc.setFont('times', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(212, 175, 55);
-    let y = photoY;
-    const labelX = 280;
-    [['FULL NAME', currentPassport.jina],['ID NO.', currentPassport.no],['BETRAYAL DATE', currentPassport.oshwa],['STATUS', 'SINGLE'],['TEAM', 'TSE']].forEach(([label, value]) => {
-      doc.text(label, labelX, y);
-      y += 24;
-      doc.setFont('times', 'bolditalic');
-      doc.setFontSize(20);
-      doc.text(value.toUpperCase(), labelX, y);
-      y += 50;
-      doc.setFont('times', 'bold');
-      doc.setFontSize(14);
-    });
-
-    const verifyUrl = window.location.origin + '/verify.html?no=' + currentPassport.no;
-    const qr = new QRious({ value: verifyUrl, size: 256, background: 'white', foreground: 'black' });
-    doc.addImage(qr.toDataURL(), 'PNG', 20, 190, 35, 35);
-    doc.text('SCAN TO VERIFY', 37.5, 230, { align: 'center' });
-
-    doc.addImage(ROYAL_SIGNATURE, 'PNG', 125, 195, 55, 18);
-    doc.text('LONG LIVE THE EMPIRE', pageW / 2, pageH - 18, { align: 'center' });
-    doc.save(`TSE_Royal_Passport_${currentPassport.no}.pdf`);
+    btn.innerText = '📜 DOWNLOAD PDF';
+    btn.disabled = false;
   }
 
   window.funguaAdmin = function() {
