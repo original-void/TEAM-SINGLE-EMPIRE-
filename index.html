@@ -198,7 +198,9 @@
       }
 
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'pt', 'a5');
+
+      // A6 size - 105x148mm
+      const doc = new jsPDF('p', 'pt', 'a6');
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
 
@@ -208,46 +210,66 @@
 
       // Borders
       doc.setDrawColor(212, 175, 55);
-      doc.setLineWidth(2.5);
-      doc.rect(20, 20, pageW - 40, pageH - 40);
-      doc.setLineWidth(1);
-      doc.rect(25, 25, pageW - 50, pageH - 50);
+      doc.setLineWidth(2);
+      doc.rect(12, 12, pageW - 24, pageH - 24);
+      doc.setLineWidth(0.8);
+      doc.rect(15, 15, pageW - 30, pageH - 30);
 
       // Header
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(18);
+      doc.setFontSize(13);
       doc.setTextColor(212, 175, 55);
-      doc.text('TEAM SINGLE EMPIRE', pageW/2, 45, { align: 'center' });
+      doc.text('TEAM SINGLE EMPIRE', pageW/2, 32, { align: 'center' });
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.text('ROYAL PASSPORT', pageW/2, 58, { align: 'center' });
-
       doc.setFontSize(7);
-      doc.setTextColor(184, 148, 31);
-      doc.text('BY DECREE OF THE KING', pageW/2, 68, { align: 'center' });
+      doc.text('ROYAL PASSPORT', pageW/2, 41, { align: 'center' });
 
-      // Icon
+      doc.setFontSize(5);
+      doc.setTextColor(184, 148, 31);
+      doc.text('BY DECREE OF THE KING', pageW/2, 48, { align: 'center' });
+
+      // CROWN instead of 3 dots 👑
       doc.setFillColor(212, 175, 55);
-      doc.circle(pageW/2, 78, 5, 'F');
-      doc.circle(pageW/2 - 8, 78, 4, 'F');
-      doc.circle(pageW/2 + 8, 78, 4, 'F');
+      doc.setDrawColor(212, 175, 55);
+      doc.setLineWidth(0.8);
+
+      const crownX = pageW/2;
+      const crownY = 56;
+
+      // Crown base
+      doc.line(crownX - 12, crownY + 3, crownX + 12, crownY + 3);
+
+      // Crown spikes - 5 points
+      doc.line(crownX - 12, crownY + 3, crownX - 8, crownY - 2);
+      doc.line(crownX - 8, crownY - 2, crownX - 4, crownY + 1);
+
+      doc.line(crownX - 4, crownY + 1, crownX, crownY - 4);
+      doc.line(crownX, crownY - 4, crownX + 4, crownY + 1);
+
+      doc.line(crownX + 4, crownY + 1, crownX + 8, crownY - 2);
+      doc.line(crownX + 8, crownY - 2, crownX + 12, crownY + 3);
+
+      // Small circles on spikes
+      doc.circle(crownX - 8, crownY - 2, 1, 'F');
+      doc.circle(crownX, crownY - 4, 1.5, 'F');
+      doc.circle(crownX + 8, crownY - 2, 1, 'F');
 
       // Details left
-      let y = 100;
-      const labelX = 30;
-      const lineEndX = 220;
-      const maxTextWidth = 180;
+      let y = 68;
+      const labelX = 18;
+      const lineEndX = 110;
+      const maxTextWidth = 85;
 
       const drawField = (label, value, valueColor = [212, 175, 55]) => {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7);
+        doc.setFontSize(5);
         doc.setTextColor(184, 148, 31);
         doc.text(label, labelX, y);
 
-        y += 14;
+        y += 10;
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
+        doc.setFontSize(7);
         doc.setTextColor(...valueColor);
 
         let displayValue = value.toString();
@@ -255,15 +277,14 @@
 
         if (doc.getTextWidth(displayValue) > maxTextWidth) {
           displayValue = doc.splitTextToSize(displayValue, maxTextWidth)[0];
-          if (displayValue.length < value.toString().length) displayValue += '...';
         }
         doc.text(displayValue, labelX, y);
 
-        y += 12;
+        y += 8;
         doc.setDrawColor(212, 175, 55);
-        doc.setLineWidth(0.5);
+        doc.setLineWidth(0.4);
         doc.line(labelX, y, lineEndX, y);
-        y += 16;
+        y += 12;
       };
 
       drawField('PASSPORT NO:', currentPassport.no);
@@ -273,78 +294,78 @@
       drawField('LAST BETRAYAL:', currentPassport.oshwa.split('-')[0], [255, 0, 0]);
 
       // Photo right
-      const photoX = 250, photoY = 100, photoW = 130, photoH = 155;
+      const photoX = 125, photoY = 68, photoW = 65, photoH = 78;
       doc.setDrawColor(212, 175, 55);
-      doc.setLineWidth(2.5);
+      doc.setLineWidth(1.5);
       doc.rect(photoX, photoY, photoW, photoH);
 
       if (currentPassport.photo && currentPassport.photo.startsWith('data:image')) {
         try {
-          doc.addImage(currentPassport.photo, 'PNG', photoX + 3, photoY + 3, photoW - 6, photoH - 6, undefined, 'FAST');
+          doc.addImage(currentPassport.photo, 'PNG', photoX + 2, photoY + 2, photoW - 4, photoH - 4, undefined, 'FAST');
         } catch(e) {
-          doc.setFontSize(10);
+          doc.setFontSize(6);
           doc.setTextColor(150, 150, 150);
           doc.text('NO PHOTO', photoX + photoW/2, photoY + photoH/2, { align: 'center' });
         }
       }
 
-      // Watermark TSE - positioned right after last field
-      doc.setFontSize(50);
-      doc.setTextColor(35, 35, 35);
-      doc.text('TSE', pageW/2, y + 25, { align: 'center' });
+      // Watermark TSE
+      doc.setFontSize(28);
+      doc.setTextColor(25, 25, 25);
+      doc.text('TSE', pageW/2, y + 15, { align: 'center' });
 
-      // Bottom section - tied to y, no more gap
-      const bottomY = y + 55;
+      // Bottom section
+      const bottomY = y + 30;
 
       // QR Code
       const verifyUrl = window.location.origin + '/verify.html?no=' + currentPassport.no;
       try {
-          const qr = new QRious({ value: verifyUrl, size: 400, background: 'white', foreground: 'black' });
-          doc.addImage(qr.toDataURL(), 'PNG', 35, bottomY, 75, 75);
-          doc.setFontSize(6);
+          const qr = new QRious({ value: verifyUrl, size: 300, background: 'white', foreground: 'black' });
+          doc.addImage(qr.toDataURL(), 'PNG', 18, bottomY, 42, 42);
+          doc.setFontSize(4);
           doc.setTextColor(184, 148, 31);
-          doc.text('SCAN TO VERIFY', 72, bottomY + 80, { align: 'center' });
+          doc.text('SCAN TO VERIFY', 39, bottomY + 45, { align: 'center' });
       } catch(e) {}
 
       // Royal Seal
       doc.setDrawColor(212, 175, 55);
-      doc.setLineWidth(2);
-      doc.circle(pageW/2, bottomY + 25, 18);
+      doc.setLineWidth(1.2);
+      doc.circle(pageW/2, bottomY + 15, 10);
       doc.setFillColor(212, 175, 55);
-      doc.circle(pageW/2, bottomY + 25, 5, 'F');
-      doc.setFontSize(6);
-      doc.text('ROYAL SEAL', pageW/2, bottomY + 50, { align: 'center' });
+      doc.circle(pageW/2, bottomY + 15, 3, 'F');
+      doc.setFontSize(4);
+      doc.text('ROYAL SEAL', pageW/2, bottomY + 28, { align: 'center' });
 
       // Signature
-      const sigX = 250;
+      const sigX = 130;
       doc.setDrawColor(212, 175, 55);
-      doc.line(sigX, bottomY + 20, sigX + 120, bottomY + 20);
+      doc.line(sigX, bottomY + 12, sigX + 60, bottomY + 12);
       doc.setFont('helvetica', 'italic');
-      doc.setFontSize(13);
+      doc.setFontSize(8);
       doc.setTextColor(212, 175, 55);
-      doc.text('King Smokie', sigX + 60, bottomY + 16, { align: 'center' });
+      doc.text('King Smokie', sigX + 30, bottomY + 10, { align: 'center' });
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setFontSize(5);
       doc.setTextColor(184, 148, 31);
-      doc.text('HIS MAJESTY', sigX + 60, bottomY + 28, { align: 'center' });
-      doc.text('TEAM SINGLE EMPIRE', sigX + 60, bottomY + 38, { align: 'center' });
+      doc.text('HIS MAJESTY', sigX + 30, bottomY + 17, { align: 'center' });
+      doc.text('TEAM SINGLE EMPIRE', sigX + 30, bottomY + 23, { align: 'center' });
 
       // Footer
-      const footerY = bottomY + 75;
+      const footerY = bottomY + 45;
       doc.setDrawColor(212, 175, 55);
-      doc.setLineWidth(0.5);
-      doc.line(40, footerY, pageW - 40, footerY);
+      doc.setLineWidth(0.4);
+      doc.line(20, footerY, pageW - 20, footerY);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
+      doc.setFontSize(6);
       doc.setTextColor(212, 175, 55);
-      doc.text('LONG LIVE THE EMPIRE', pageW / 2, footerY + 10, { align: 'center' });
+      doc.text('LONG LIVE THE EMPIRE', pageW / 2, footerY + 7, { align: 'center' });
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6);
+      doc.setFontSize(4);
       doc.setTextColor(150, 150, 150);
-      doc.text('EST. 2026 • DECREED ON ' + currentPassport.date, pageW / 2, footerY + 18, { align: 'center' });
+      doc.text('EST. 2026 • DECREED ON ' + currentPassport.date, pageW / 2, footerY + 12, { align: 'center' });
 
       // Download
       const pdfBlob = doc.output('blob');
