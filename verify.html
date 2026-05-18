@@ -11,10 +11,11 @@
     :root { --gold: #D4AF37; --black: #0A0A0A; }
     body { font-family: 'Montserrat'; background: var(--black); color: var(--gold); padding: 20px; text-align: center; }
     h1 { font-family: 'Cinzel'; }
-   .card { background: #111; padding: 30px; border-radius: 15px; border: 2px solid var(--gold); max-width: 500px; margin: 20px auto; }
-   .valid { color: #00FF00; font-size: 24px; font-weight: bold; }
-   .invalid { color: #FF0000; font-size: 24px; font-weight: bold; }
-   .detail { text-align: left; margin: 10px 0; }
+  .card { background: #111; padding: 30px; border-radius: 15px; border: 2px solid var(--gold); max-width: 500px; margin: 20px auto; box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+  .valid { color: #00FF00; font-size: 24px; font-weight: bold; }
+  .invalid { color: #FF0000; font-size: 24px; font-weight: bold; }
+  .detail { text-align: left; margin: 10px 0; }
+  .photo { width: 120px; height: 140px; border: 3px solid var(--gold); object-fit: cover; margin: 15px auto; display: block; }
 </style>
 </head>
 <body>
@@ -43,11 +44,12 @@
     document.getElementById('result').innerHTML = '<p class="invalid">❌ NO PASSPORT NUMBER PROVIDED</p>';
   } else {
     db.ref('citizens/' + passportNo).once('value')
-     .then(snap => {
+   .then(snap => {
         if (snap.exists()) {
           const c = snap.val();
-          document.getElementById('result').innerHTML = `
+          let html = `
             <p class="valid">✅ VERIFIED CITIZEN</p>
+            ${c.photo? `<img src="${c.photo}" class="photo">` : ''}
             <div class="detail"><b>PASSPORT NO:</b> ${c.no}</div>
             <div class="detail"><b>ROYAL NAME:</b> ${c.jina.toUpperCase()}</div>
             <div class="detail"><b>STATUS:</b> Certified Single</div>
@@ -55,12 +57,14 @@
             <div class="detail"><b>LAST BETRAYAL:</b> ${c.oshwa}</div>
             <div class="detail"><b>DECREED:</b> ${c.date}</div>
             <p style="margin-top:20px; font-size:12px;">LONG LIVE THE EMPIRE</p>
+            <p style="font-size:10px; color:#888;">Checked on ${new Date().toLocaleString()}</p>
           `;
+          document.getElementById('result').innerHTML = html;
         } else {
           document.getElementById('result').innerHTML = '<p class="invalid">❌ FAKE PASSPORT<br>This citizen does not exist in the Empire</p>';
         }
       })
-     .catch(err => {
+   .catch(err => {
         document.getElementById('result').innerHTML = '<p class="invalid">❌ DATABASE ERROR</p>';
       });
   }
