@@ -198,7 +198,9 @@
       }
 
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'pt', 'a6');
+
+      // A7 size - smaller paper
+      const doc = new jsPDF('p', 'pt', 'a7');
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
 
@@ -206,55 +208,55 @@
       doc.setFillColor(10, 10, 10);
       doc.rect(0, 0, pageW, pageH, 'F');
 
-      // Borders
+      // Borders - tighter margins for A7
       doc.setDrawColor(212, 175, 55);
-      doc.setLineWidth(2.5);
+      doc.setLineWidth(2);
+      doc.rect(15, 15, pageW - 30, pageH - 30);
+      doc.setLineWidth(0.8);
       doc.rect(18, 18, pageW - 36, pageH - 36);
-      doc.setLineWidth(1);
-      doc.rect(22, 22, pageW - 44, pageH - 44);
 
-      // Header
+      // Header - smaller fonts
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setTextColor(212, 175, 55);
-      doc.text('TEAM SINGLE EMPIRE', pageW/2, 40, { align: 'center' });
+      doc.text('TEAM SINGLE EMPIRE', pageW/2, 32, { align: 'center' });
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.text('ROYAL PASSPORT', pageW/2, 52, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('ROYAL PASSPORT', pageW/2, 42, { align: 'center' });
 
-      doc.setFontSize(6);
+      doc.setFontSize(5);
       doc.setTextColor(184, 148, 31);
-      doc.text('BY DECREE OF THE KING', pageW/2, 61, { align: 'center' });
+      doc.text('BY DECREE OF THE KING', pageW/2, 50, { align: 'center' });
 
       // Icon
       doc.setFillColor(212, 175, 55);
-      doc.circle(pageW/2, 70, 4, 'F');
-      doc.circle(pageW/2 - 6, 70, 3, 'F');
-      doc.circle(pageW/2 + 6, 70, 3, 'F');
+      doc.circle(pageW/2, 58, 3, 'F');
+      doc.circle(pageW/2 - 5, 58, 2.5, 'F');
+      doc.circle(pageW/2 + 5, 58, 2.5, 'F');
 
-      // Details left
-      let y = 90;
-      const labelX = 28;
-      const lineEndX = 170;
+      // Details left - tighter spacing
+      let y = 72;
+      const labelX = 22;
+      const lineEndX = 130;
 
       const drawField = (label, value, valueColor = [212, 175, 55]) => {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6);
+        doc.setFontSize(5);
         doc.setTextColor(184, 148, 31);
         doc.text(label, labelX, y);
 
-        y += 11;
+        y += 9;
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
+        doc.setFontSize(7);
         doc.setTextColor(...valueColor);
         doc.text(value, labelX, y);
 
-        y += 9;
+        y += 7;
         doc.setDrawColor(212, 175, 55);
         doc.setLineWidth(0.5);
         doc.line(labelX, y, lineEndX, y);
-        y += 16;
+        y += 13;
       };
 
       drawField('PASSPORT NO:', currentPassport.no);
@@ -263,78 +265,77 @@
       drawField('EMBASSY:', currentPassport.embassy.toUpperCase());
       drawField('LAST BETRAYAL:', currentPassport.oshwa.split('-')[0], [255, 0, 0]);
 
-      // Photo right
-      const photoX = 185, photoY = 90, photoW = 100, photoH = 120;
+      // Photo right - smaller for A7
+      const photoX = 145, photoY = 72, photoW = 80, photoH = 95;
       doc.setDrawColor(212, 175, 55);
-      doc.setLineWidth(2);
+      doc.setLineWidth(1.5);
       doc.rect(photoX, photoY, photoW, photoH);
 
       if (currentPassport.photo && currentPassport.photo.startsWith('data:image')) {
         try {
           doc.addImage(currentPassport.photo, 'PNG', photoX + 2, photoY + 2, photoW - 4, photoH - 4, undefined, 'FAST');
         } catch(e) {
-          console.log('Photo failed:', e);
-          doc.setFontSize(8);
+          doc.setFontSize(6);
           doc.setTextColor(150, 150, 150);
           doc.text('NO PHOTO', photoX + photoW/2, photoY + photoH/2, { align: 'center' });
         }
       }
 
-      // Watermark TSE - lower down
-      doc.setFontSize(35);
-      doc.setTextColor(35, 35, 35);
-      doc.text('TSE', pageW/2, pageH/2 + 25, { align: 'center' });
+      // Watermark TSE
+      doc.setFontSize(28);
+      doc.setTextColor(30, 30, 30);
+      doc.text('TSE', pageW/2, pageH/2 + 20, { align: 'center' });
 
       // Bottom section
-      const bottomY = pageH - 85;
+      const bottomY = pageH - 70;
 
-      // QR
+      // QR Code - INCREASED SIZE
       const verifyUrl = window.location.origin + '/verify.html?no=' + currentPassport.no;
       try {
-          const qr = new QRious({ value: verifyUrl, size: 200, background: 'white', foreground: 'black' });
-          doc.addImage(qr.toDataURL(), 'PNG', 28, bottomY, 40, 40);
-          doc.setFontSize(5);
+          const qr = new QRious({ value: verifyUrl, size: 300, background: 'white', foreground: 'black' });
+          doc.addImage(qr.toDataURL(), 'PNG', 22, bottomY, 55, 55);
+          doc.setFontSize(4.5);
           doc.setTextColor(184, 148, 31);
-          doc.text('SCAN TO VERIFY', 48, bottomY + 46, { align: 'center' });
+          doc.text('SCAN TO VERIFY', 49, bottomY + 60, { align: 'center' });
       } catch(e) {}
 
-      // Royal Seal
+      // Royal Seal - smaller
       doc.setDrawColor(212, 175, 55);
-      doc.setLineWidth(1.5);
-      doc.circle(pageW/2, bottomY + 20, 14);
+      doc.setLineWidth(1);
+      doc.circle(pageW/2, bottomY + 18, 12);
       doc.setFillColor(212, 175, 55);
-      doc.circle(pageW/2, bottomY + 20, 4, 'F');
-      doc.setFontSize(5);
-      doc.text('ROYAL SEAL', pageW/2, bottomY + 40, { align: 'center' });
+      doc.circle(pageW/2, bottomY + 18, 3.5, 'F');
+      doc.setFontSize(4.5);
+      doc.text('ROYAL SEAL', pageW/2, bottomY + 35, { align: 'center' });
 
       // Signature
       doc.setDrawColor(212, 175, 55);
-      doc.line(195, bottomY + 15, 275, bottomY + 15);
+      doc.line(175, bottomY + 15, 240, bottomY + 15);
       doc.setFont('helvetica', 'italic');
-      doc.setFontSize(10);
+      doc.setFontSize(8);
       doc.setTextColor(212, 175, 55);
-      doc.text('King Smokie', 235, bottomY + 12, { align: 'center' });
+      doc.text('King Smokie', 207, bottomY + 12, { align: 'center' });
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6);
+      doc.setFontSize(5);
       doc.setTextColor(184, 148, 31);
-      doc.text('HIS MAJESTY', 235, bottomY + 22, { align: 'center' });
-      doc.text('TEAM SINGLE EMPIRE', 235, bottomY + 30, { align: 'center' });
+      doc.text('HIS MAJESTY', 207, bottomY + 20, { align: 'center' });
+      doc.text('TEAM SINGLE EMPIRE', 207, bottomY + 26, { align: 'center' });
 
       // Footer
       doc.setDrawColor(212, 175, 55);
       doc.setLineWidth(0.5);
-      doc.line(30, pageH - 22, pageW - 30, pageH - 22);
+      doc.line(25, pageH - 18, pageW - 25, pageH - 18);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
+      doc.setFontSize(6);
       doc.setTextColor(212, 175, 55);
-      doc.text('LONG LIVE THE EMPIRE', pageW / 2, pageH - 13, { align: 'center' });
+      doc.text('LONG LIVE THE EMPIRE', pageW / 2, pageH - 11, { align: 'center' });
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(5);
+      doc.setFontSize(4);
       doc.setTextColor(150, 150, 150);
-      doc.text('EST. 2026 • DECREED ON ' + currentPassport.date, pageW / 2, pageH - 7, { align: 'center' });
+      doc.text('EST. 2026 • DECREED ON ' + currentPassport.date, pageW / 2, pageH - 6, { align: 'center' });
 
       // Download
       const pdfBlob = doc.output('blob');
